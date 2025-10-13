@@ -1,0 +1,93 @@
+# ===============================
+# 🌐 Client (Vite + React)
+# ===============================
+client/node_modules/
+client/dist/
+client/.vite/
+client/.eslintcache
+client/package-lock.json
+
+# local env files
+client/.env
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# editor logs
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+client/.DS_Store
+
+# ===============================
+# ⚙️ Server (.NET)
+# ===============================
+server/bin/
+server/obj/
+server/wwwroot/        # byggs automatiskt av pipeline
+server/appsettings.*.json
+server/.vs/
+server/.vscode/
+
+# ===============================
+# 🧱 Build & Publish artefakter
+# ===============================
+publish/
+*.Publish.xml
+*.pubxml
+*.user
+*.dbmdl
+*.jfm
+*.suo
+*.cache
+*.log
+
+# ===============================
+# 💾 System & IDE-filer
+# ===============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ===============================
+# 🧪 Test / Coverage
+# ===============================
+coverage/
+*.coverage
+*.coveragexml
+TestResult*/
+.vsTest/
+.vscode-test/
+
+# ===============================
+# 🤖 GitHub Actions / CI
+# ===============================
+# (Behåll workflow-filer, men ignorera tillfälliga artefakter)
+.github/workflows/*.yml
+!/.github/workflows/
+.github/workflows/tmp/
+.github/actions/
+.github/backup/
+
+# ===============================
+# 🔐 Secrets / Keys (säkerhet)
+# ===============================
+*.pfx
+*.key
+*.cer
+*.pem
+*.crt
+*.pubxml.user
+secrets.json
+
+# ===============================
+# 🪄 Misc
+# ========================

@@ -71,7 +71,6 @@ TestResult*/
 # 🤖 GitHub Actions / CI
 # ===============================
 # (Behåll workflow-filer, men ignorera tillfälliga artefakter)
-.github/workflows/*.yml
 !/.github/workflows/
 .github/workflows/tmp/
 .github/actions/

@@ -80,4 +80,6 @@ app.MapPost("/api/admin/set-time", async (HttpRequest req, BombService bomb) =>
     return Results.Ok();
 });
 
+app.MapFallbackToFile("index.html");
+
 app.Run();

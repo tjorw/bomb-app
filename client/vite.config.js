@@ -11,6 +11,7 @@ export default defineConfig({
         index: resolve(__dirname, "index.html"),
         bomb: resolve(__dirname, "bomb.html"),
         admin: resolve(__dirname, "admin.html"),
+        code: resolve(__dirname, "code.html"),
       },
     },
   },

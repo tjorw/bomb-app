@@ -6,9 +6,7 @@ export async function startConnection(onStateUpdated) {
   if (connection) return connection;
 
   connection = new signalR.HubConnectionBuilder()
-    .withUrl("/bomhub", {
-      transport: signalR.HttpTransportType.LongPolling
-    })
+    .withUrl("/bomhub")
     .withAutomaticReconnect()
     .build();
 

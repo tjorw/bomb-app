@@ -27,16 +27,15 @@ jobs:
         working-directory: client
         run: npm run build
 
-      # ---- Copy dist -> server/wwwroot ----
       - name: Prepare wwwroot
+        shell: pwsh
         run: |
           if (Test-Path server/wwwroot) { Remove-Item -Recurse -Force server/wwwroot }
-          New-Item -ItemType Directory -Force -Path server/wwwroot | Out-Null
-          Copy-Item -Recurse -Force client/dist/* server/wwwroot/
-          echo "=== wwwroot listing ==="
-          dir server/wwwroot
-          echo "=== assets listing ==="
-          dir server/wwwroot/assets
+          New-Item -ItemType Directory -Path server/wwwroot | Out-Null
+          Copy-Item -Recurse -Force "client/dist/*" "server/wwwroot/"
+          Write-Host "=== server/wwwroot ==="
+          Get-ChildItem -Recurse server/wwwroot | Select-Object FullName
+
 
       # ---- Build backend ----
       - name: Setup .NET
@@ -55,6 +54,12 @@ jobs:
       - name: Publish (server)
         working-directory: server
         run: dotnet publish --configuration Release --output ../publish --runtime win-x86
+
+      - name: Inspect publish output
+        shell: pwsh
+        run: |
+          Write-Host "=== publish/wwwroot ==="
+          Get-ChildItem -Recurse publish/wwwroot | Select-Object FullName
 
       # ---- Deploy via WebDeploy to MonsterASP.NET ----
       # MonsterASP:s egen guide använder denna action.

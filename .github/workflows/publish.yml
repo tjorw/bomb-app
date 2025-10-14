@@ -27,16 +27,16 @@ jobs:
         working-directory: client
         run: npm run build
 
-      # ---- Copy dist -> server ----
+      # ---- Copy dist -> server/wwwroot ----
       - name: Prepare wwwroot
         run: |
-          if (Test-Path server) { Remove-Item -Recurse -Force server }
-          New-Item -ItemType Directory -Force -Path server | Out-Null
-          Copy-Item -Recurse -Force client/dist/* server/
+          if (Test-Path server/wwwroot) { Remove-Item -Recurse -Force server/wwwroot }
+          New-Item -ItemType Directory -Force -Path server/wwwroot | Out-Null
+          Copy-Item -Recurse -Force client/dist/* server/wwwroot/
           echo "=== wwwroot listing ==="
-          dir server
+          dir server/wwwroot
           echo "=== assets listing ==="
-          dir server/assets
+          dir server/wwwroot/assets
 
       # ---- Build backend ----
       - name: Setup .NET

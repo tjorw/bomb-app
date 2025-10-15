@@ -28,7 +28,7 @@ public class GameState()
 
     public bool CodeEnabled { get; set; }          // true när rätt sekvens är klar
     public int ActivationIndex { get; set; }       // hur många rätt i följd (0..6)
-    public int ActivationTotal { get; set; }
+    public int ActivationTotal => WireSequence.Length;   
     public string? LastActivationMsg { get; set; } // feedback på senaste tryck
     public int FailedAttempts { get; set; }
     public int MaxAttempts { get; set; }

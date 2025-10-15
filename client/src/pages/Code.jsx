@@ -7,7 +7,7 @@ export default function Home() {
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
   const [show, setShow] = useState(false);
-
+  
   const [state, setState] = useState({
     status: "Odesarmerad",
     remainingSeconds: 0,
@@ -15,9 +15,10 @@ export default function Home() {
     failedAttempts: 0,
     maxAttempts: 2
   });
-
+  
   const status = useMemo(() => statusText(state.status), [state.status]);
-
+  const locked = !state.codeEnabled || status !== "Odesarmerad";
+  
 
   useEffect(() => {
     let mounted = true;
@@ -75,11 +76,12 @@ export default function Home() {
         <div className="display">
           <div className="glowEdge" />
           <div className="codeRow" aria-label="Inmatad kod">
+
+  
             {code.length ? (
               show ? <span className="codeShown">{code}</span> : <span className="codeDots">{"•".repeat(code.length)}</span>
-            ) : (
-              <span className="placeholder">Mata in kod …</span>
-            )}
+            ) : state.codeEnabled ? (<span className="placeholder">Mata in kod …</span>) : ((<span className="placeholder">⛔ Inte aktiverad ({state.activationIndex}/{state.activationTotal})</span>))
+            }
           </div>
           <button className="eye" aria-label={show ? "Dölj kod" : "Visa kod"} onClick={() => setShow(!show)}>
             {show ? "🙈" : "👁️"}
@@ -93,7 +95,7 @@ export default function Home() {
               key={k}
               className={"key " + (k === "C" ? "key-alt" : k === "⌫" ? "key-warn" : "")}
               onClick={() => onKeyPress(k)}
-              disabled={status !== "Odesarmerad"}
+              disabled={locked}
             >
               {k}
             </button>
@@ -104,7 +106,7 @@ export default function Home() {
         <button
           className="submit"
           onClick={() => onKeyPress("✓")}
-          disabled={!code || status !== "Odesarmerad"}
+          disabled={!code || locked}
           title="Skicka kod"
         >
           ✓ Skicka kod

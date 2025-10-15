@@ -45,6 +45,8 @@ app.MapPost("/api/submit-code", async (HttpRequest request, BombService bomb) =>
         : Results.BadRequest(new { success = false, reason });
 });
 
+
+//admin API
 app.MapPost("/api/admin/registerfail", async (BombService bomb) =>
 {
     await bomb.RegisterFail();
@@ -88,6 +90,17 @@ app.MapPost("/api/admin/set-time", async (HttpRequest req, BombService bomb) =>
         autostart = autoProp.GetBoolean();
     await bomb.SetTimeAsync(seconds, autostart);
     return Results.Ok();
+});
+
+//Wires API
+app.MapGet("/api/activation/state", (BombService bomb) => Results.Ok(bomb.GetState()));
+app.MapPost("/api/activation/press", async (HttpRequest req, BombService bomb) =>
+{
+    var body = await new StreamReader(req.Body).ReadToEndAsync();
+    using var doc = JsonDocument.Parse(body);
+    var color = doc.RootElement.GetProperty("color").GetString() ?? "";
+    var (ok, msg, completed) = await bomb.PressWireAsync(color);
+    return ok ? Results.Ok(new { ok, msg, completed }) : Results.BadRequest(new { ok, msg, completed });
 });
 
 app.Run();

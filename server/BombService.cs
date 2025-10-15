@@ -5,27 +5,21 @@ public class BombService
 {
     readonly object _lock = new();
     private Timer? _timer;
-    private int _remainingSeconds;
-    private bool _paused;
-    private BombStatus _status = BombStatus.Odesarmerad;
-    private readonly string _correctCode;
     private readonly IHubContext<BombHub>? _hubContext;
 
-    private int _failedAttempts = 0;
-
-    private readonly int _maxAttempts;
-    private readonly int _failedTimePenaltySeconds;
-
-    private readonly int _countDownSeconds;
+    private GameState _state = new GameState();
 
     public BombService(IHubContext<BombHub> hubContext)
     {
+        _state = new GameState();
+        _state.CorrectCode = "1234";
+        _state.BombCountDownSeconds = 90 * 60;
+        _state.BombFailedPenaltySeconds = 60;
+        _state.MaxAttempts = 20;
+        _state.WireSequence = new[] { "red", "red", "green", "yellow", "blue", "red" };
+        _state.WireCountDownSeconds = 5;
         _hubContext = hubContext;
-        _correctCode = "1234";
-        _countDownSeconds = 90 * 60;
-        _maxAttempts = 20;
-        _failedTimePenaltySeconds = 60;
-        StartNewCountdown(_countDownSeconds);
+        StartNewCountdown();
     }
 
     public BombDto GetState()
@@ -34,11 +28,15 @@ public class BombService
         {
             return new BombDto
             {
-                Status = _status,
-                RemainingSeconds = _remainingSeconds,
-                Paused = _paused,
-                FailedAttempts = _failedAttempts,
-                MaxAttempts = _maxAttempts
+                Status = _state.Status,
+                RemainingSeconds = _state.BombRemainingSeconds,
+                Paused = _state.Paused,
+                FailedAttempts = _state.FailedAttempts,
+                MaxAttempts = _state.MaxAttempts,
+                CodeEnabled = _state.CodeEnabled,
+                ActivationIndex = _state.ActivationIndex,
+                ActivationTotal = _state.ActivationTotal,
+                LastActivationMsg = _state.LastActivationMsg
             };
         }
     }
@@ -47,10 +45,10 @@ public class BombService
     {
         lock (_lock)
         {
-            if (_status != BombStatus.Odesarmerad)
+            if (_state.Status != BombStatus.Odesarmerad)
                 return (false, "Bomben är inte i ett desarmeringsbart läge.");
 
-            if (code == _correctCode)
+            if (code == _state.CorrectCode)
             {
                 handleSuccess();
             }
@@ -62,74 +60,40 @@ public class BombService
 
         await BroadcastState();
 
-        if (_status == BombStatus.Desarmerad) return (true, "Desarmerad");
-        if (_status == BombStatus.Exploderad) return (false, "Felkod: max antal försök uppnått. Bomben exploderade.");
-        return (false, $"Fel kod — {_failedAttempts}/{_maxAttempts} försök använda.");
+        if (_state.Status == BombStatus.Desarmerad) return (true, "Desarmerad");
+        if (_state.Status == BombStatus.Exploderad) return (false, "Felkod: max antal försök uppnått. Bomben exploderade.");
+        return (false, $"Fel kod — {_state.FailedAttempts}/{_state.MaxAttempts} försök använda.");
     }
     public async Task UndoFail()
     {
-       
+
         lock (_lock)
         {
-            if (_status != BombStatus.Odesarmerad) return;
+            if (_state.Status != BombStatus.Odesarmerad) return;
             undoFail();
         }
 
         await BroadcastState();
 
-    }    public async Task RegisterFail()
+    }
+    public async Task RegisterFail()
     {
-       
+
         lock (_lock)
         {
-            if (_status != BombStatus.Odesarmerad) return;
+            if (_state.Status != BombStatus.Odesarmerad) return;
             handleFail();
         }
 
         await BroadcastState();
 
     }
-    private void handleSuccess()
-    {
-        _status = BombStatus.Desarmerad;
-        StopTimer();
-    }
-
-    private void handleFail()
-    {
-        _failedAttempts++;
-        _remainingSeconds -= _failedTimePenaltySeconds;
-        if (_remainingSeconds <= 0)
-        {
-            _status = BombStatus.Exploderad;
-            _remainingSeconds = 0;
-            StopTimer();
-        }
-        if (_failedAttempts >= _maxAttempts)
-        {
-            _status = BombStatus.Exploderad;
-            StopTimer();
-        }
-
-    }
-
-    private void undoFail()
-    {
-        if (_failedAttempts <= 0) return;
-
-        _failedAttempts--;
-        _remainingSeconds += _failedTimePenaltySeconds;
-    }
-        
 
     public async Task Reset()
     {
         lock (_lock)
         {
-            _status = BombStatus.Odesarmerad;
-            _remainingSeconds = _countDownSeconds;
-            _paused = false;
-            _failedAttempts = 0;
+            _state.Reset();
         }
         StartTimer();
         await BroadcastState();
@@ -137,7 +101,7 @@ public class BombService
 
     public async Task PauseAsync()
     {
-        lock (_lock) { _paused = true; }
+        lock (_lock) { _state.Paused = true; }
         await BroadcastState();
     }
 
@@ -145,8 +109,8 @@ public class BombService
     {
         lock (_lock)
         {
-            _paused = false;
-            if (_status == BombStatus.Odesarmerad && _timer is null)
+            _state.Paused = false;
+            if (_state.Status == BombStatus.Odesarmerad && _timer is null)
                 StartTimer();
         }
         await BroadcastState();
@@ -157,30 +121,73 @@ public class BombService
         if (seconds < 0) seconds = 0;
         lock (_lock)
         {
-            _remainingSeconds = seconds;
+            _state.BombRemainingSeconds = seconds;
 
             if (autostart.HasValue)
-                _paused = !autostart.Value;
+                _state.Paused = !autostart.Value;
 
-            if (_status != BombStatus.Odesarmerad)
-                _status = BombStatus.Odesarmerad;
+            if (_state.Status != BombStatus.Odesarmerad)
+                _state.Status = BombStatus.Odesarmerad;
 
-            _failedAttempts = 0;
+            _state.FailedAttempts = 0;
 
-            if (!_paused) StartTimer();
+            if (!_state.Paused) StartTimer();
             else StopTimer();
         }
         await BroadcastState();
     }
 
-    private void StartNewCountdown(int seconds)
+    // 🔌 Tryck på en sladd (färg)
+    public async Task<(bool ok, string msg, bool completed)> PressWireAsync(string color)
+    {
+        bool completed = false;
+        lock (_lock)
+        {
+            if (_state.Status != BombStatus.Odesarmerad)
+            {
+                _state.LastActivationMsg = "Bomben är inte aktiverbar i nuläget.";
+                return (false, _state.LastActivationMsg, false);
+            }
+            if (_state.CodeEnabled)
+            {
+                _state.LastActivationMsg = "Redan aktiverad.";
+                return (true, _state.LastActivationMsg, true);
+            }
+
+            var expected = _state.WireSequence[_state.ActivationIndex];
+            if (string.Equals(color, expected, StringComparison.OrdinalIgnoreCase))
+            {
+                _state.ActivationIndex++;
+                _state.WireRemainingSeconds = _state.WireCountDownSeconds;
+                if (_state.ActivationIndex >= _state.WireSequence.Length)
+                {
+                    _state.CodeEnabled = true;
+                    _state.WireRemainingSeconds = 0;
+                    completed = true;
+                    _state.LastActivationMsg = "Aktivering klar! Kodsidan är upplåst.";
+                }
+                else
+                {
+                    _state.LastActivationMsg = $"Rätt! ({_state.ActivationIndex}/{_state.WireSequence.Length}) — nästa sladd…";
+                }
+            }
+            else
+            {
+                // Fel ordning → nollställ progress
+                _state.ActivationIndex = 0;
+                _state.WireRemainingSeconds = 0;
+                _state.LastActivationMsg = "Fel ordning! Börja om från första sladden.";
+            }
+        }
+        await BroadcastState();
+        return (completed, _state.LastActivationMsg, completed);
+    }
+
+    private void StartNewCountdown()
     {
         lock (_lock)
         {
-            _remainingSeconds = seconds;
-            _status = BombStatus.Odesarmerad;
-            _paused = false;
-            _failedAttempts = 0;
+            _state.Reset();
         }
         StartTimer();
     }
@@ -203,16 +210,28 @@ public class BombService
         bool notify = false;
         lock (_lock)
         {
-            if (_status != BombStatus.Odesarmerad) return;
-            if (_paused) { notify = true; }
+            if (_state.Status != BombStatus.Odesarmerad) return;
+            if (_state.Paused) { notify = true; }
             else
             {
-                _remainingSeconds--;
+                _state.BombRemainingSeconds--;
                 notify = true;
-                if (_remainingSeconds <= 0)
+                if (_state.BombRemainingSeconds <= 0)
                 {
-                    _status = BombStatus.Exploderad;
+                    _state.Status = BombStatus.Exploderad;
                     StopTimer();
+                }
+
+                if(_state.ActivationIndex > 0)
+                {
+                    _state.WireRemainingSeconds--;
+                    if(_state.WireRemainingSeconds <= 0)
+                    {
+                        // Tiden för att trycka på nästa sladd har gått ut
+                        _state.ActivationIndex = 0;
+                        _state.WireRemainingSeconds = 0;
+                        _state.LastActivationMsg = "Tiden för att trycka på nästa sladd har gått ut! Börja om från första sladden.";
+                    }
                 }
             }
         }
@@ -224,4 +243,37 @@ public class BombService
         var dto = GetState();
         return _hubContext!.Clients.All.SendAsync("StateUpdated", dto);
     }
+
+    private void handleSuccess()
+    {
+        _state.Status = BombStatus.Desarmerad;
+        StopTimer();
+    }
+
+    private void handleFail()
+    {
+        _state.FailedAttempts++;
+        _state.BombRemainingSeconds -= _state.BombFailedPenaltySeconds;
+        if (_state.BombRemainingSeconds <= 0)
+        {
+            _state.Status = BombStatus.Exploderad;
+            _state.BombRemainingSeconds = 0;
+            StopTimer();
+        }
+        if (_state.FailedAttempts >= _state.MaxAttempts)
+        {
+            _state.Status = BombStatus.Exploderad;
+            StopTimer();
+        }
+
+    }
+
+    private void undoFail()
+    {
+        if (_state.FailedAttempts <= 0) return;
+
+        _state.FailedAttempts--;
+        _state.BombRemainingSeconds += _state.BombFailedPenaltySeconds;
+    }
+       
 }

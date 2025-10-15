@@ -16,7 +16,7 @@ public class BombService
         _state.BombCountDownSeconds = 90 * 60;
         _state.BombFailedPenaltySeconds = 60;
         _state.MaxAttempts = 20;
-        _state.WireSequence = new[] { "red", "red", "green", "yellow", "blue", "red" };
+        _state.WireSequence = new[] { "red", "blue",  "yellow", "black" };
         _state.WireCountDownSeconds = 5;
         _hubContext = hubContext;
         StartNewCountdown();

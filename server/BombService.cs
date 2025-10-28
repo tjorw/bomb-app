@@ -12,7 +12,7 @@ public class BombService
     public BombService(IHubContext<BombHub> hubContext)
     {
         _state = new GameState();
-        _state.CorrectCode = "1234";
+        _state.CorrectCode = "6459";
         _state.BombCountDownSeconds = 90 * 60;
         _state.BombFailedPenaltySeconds = 60;
         _state.MaxAttempts = 20;

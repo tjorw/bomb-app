@@ -108,10 +108,6 @@ export default function Bomb() {
           )}
         </div>
 
-      <div className="statusRow">
-        <span><strong>Försök:</strong> {state.failedAttempts}/{state.maxAttempts} ({attemptsLeft} kvar)</span>
-      </div>
-
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ public class BombService
         _state.CorrectCode = "6459";
         _state.BombCountDownSeconds = 90 * 60;
         _state.BombFailedPenaltySeconds = 60;
-        _state.MaxAttempts = 20;
+        _state.MaxAttempts = 100;
         _state.WireSequence = new[] { "red", "blue",  "yellow", "black" };
         _state.WireCountDownSeconds = 5;
         _hubContext = hubContext;
